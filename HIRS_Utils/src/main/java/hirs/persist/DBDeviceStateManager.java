@@ -2,6 +2,7 @@ package hirs.persist;
 
 import hirs.data.persist.Device;
 import hirs.data.persist.DeviceState;
+import hirs.data.persist.alert.AlertServiceConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hibernate.Session;
@@ -9,6 +10,9 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.util.List;
 
 
@@ -17,6 +21,8 @@ import java.util.List;
  */
 public class DBDeviceStateManager extends DBManager<DeviceState> implements DeviceStateManager {
     private static final Logger LOGGER = LogManager.getLogger();
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<DeviceState> criteriaQuery;
 
     /**
      * Creates a new <code>DBDeviceStateManager</code> that uses the default
@@ -77,8 +83,14 @@ public class DBDeviceStateManager extends DBManager<DeviceState> implements Devi
         try {
             LOGGER.debug("retrieving state from db");
             tx = session.beginTransaction();
-            ret = (DeviceState) session.createCriteria(clazz)
-                    .add(Restrictions.eq("device", device)).uniqueResult();
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(DeviceState.class);
+            criteriaQuery.from(DeviceState.class);
+            Root<DeviceState> root = criteriaQuery.from(DeviceState.class);
+            criteriaQuery.select(root).where(criteriaBuilder.equal(root.get("device"), device));
+            ret = session.createQuery(criteriaQuery).getSingleResult();
+
             tx.commit();
         } catch (Exception e) {
             final String msg = "unable to retrieve object";
@@ -167,9 +179,14 @@ public class DBDeviceStateManager extends DBManager<DeviceState> implements Devi
         try {
             LOGGER.debug("retrieving state from db");
             tx = session.beginTransaction();
-            final DeviceState state = (DeviceState) session
-                    .createCriteria(clazz)
-                    .add(Restrictions.eq("device", device)).uniqueResult();
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(DeviceState.class);
+            criteriaQuery.from(DeviceState.class);
+            Root<DeviceState> root = criteriaQuery.from(DeviceState.class);
+            criteriaQuery.select(root).where(criteriaBuilder.equal(root.get("device"), device));
+            final DeviceState state = session.createQuery(criteriaQuery).getSingleResult();
+
             if (state != null) {
                 session.delete(state);
                 ret = true;

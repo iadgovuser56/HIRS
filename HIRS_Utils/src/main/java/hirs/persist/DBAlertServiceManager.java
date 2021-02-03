@@ -11,6 +11,10 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+
 /**
  * A <code>DBAlertServiceManager</code> is a service (extends <code>DBManager</code>) that
  * implements the <code>AlertServiceConfigManager</code> that stores and retrieves Alert Services.
@@ -19,6 +23,9 @@ public class DBAlertServiceManager
         extends DBManager<AlertServiceConfig> implements AlertServiceConfigManager {
 
     private static final Logger LOGGER = LogManager.getLogger(DBAlertServiceManager.class);
+
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<AlertServiceConfig> criteriaQuery;
 
     /**
      * Creates a new <code>DBReportSummaryManager</code>. The optional SessionFactory parameter is
@@ -118,8 +125,13 @@ public class DBAlertServiceManager
         try {
             LOGGER.debug("retrieving AlertServiceConfig from db");
             tx = session.beginTransaction();
-            ret = (AlertServiceConfig) session.createCriteria(AlertServiceConfig.class)
-                    .add(Restrictions.eq("type", type)).uniqueResult();
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(AlertServiceConfig.class);
+            criteriaQuery.from(AlertServiceConfig.class);
+            Root<AlertServiceConfig> root = criteriaQuery.from(AlertServiceConfig.class);
+            criteriaQuery.select(root).where(criteriaBuilder.equal(root.get("type"), type));
+            ret = session.createQuery(criteriaQuery).getSingleResult();
             tx.commit();
         } catch (Exception e) {
             final String msg = "unable to retrieve object";
@@ -161,8 +173,14 @@ public class DBAlertServiceManager
         try {
             LOGGER.debug("retrieving object from db");
             tx = session.beginTransaction();
-            object = (AlertServiceConfig) session.createCriteria(AlertServiceConfig.class)
-                    .add(Restrictions.eq("type", type)).uniqueResult();
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(AlertServiceConfig.class);
+            criteriaQuery.from(AlertServiceConfig.class);
+            Root<AlertServiceConfig> root = criteriaQuery.from(AlertServiceConfig.class);
+            criteriaQuery.select(root).where(criteriaBuilder.equal(root.get("type"), type));
+            object = session.createQuery(criteriaQuery).getSingleResult();
+
             if (object != null) {
                 LOGGER.debug("found object, deleting it");
                 session.delete(object);

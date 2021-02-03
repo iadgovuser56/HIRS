@@ -31,6 +31,11 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Property;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.Subqueries;
+import org.hibernate.query.Query;
+
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 /**
  * This class defines a <code>AlertManager</code> that stores policies in a
@@ -38,6 +43,9 @@ import org.hibernate.criterion.Subqueries;
  */
 public class DBAlertManager extends DBManager<Alert> implements AlertManager {
     private static final Logger LOGGER = getLogger(DBAlertManager.class);
+
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<Alert> criteriaQuery;
 
 
     /**
@@ -263,11 +271,15 @@ public class DBAlertManager extends DBManager<Alert> implements AlertManager {
             tx = session.beginTransaction();
 
             // query hibernate to count alerts with the given deviceName and null archivedTime
-            Criteria criteria = session.createCriteria(Alert.class);
-            criteria.add(Restrictions.eq("policyId", policy.getId()));
-            criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 
-            List list = criteria.list();
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(Alert.class);
+            criteriaQuery.from(Alert.class);
+            Root<Alert> root = criteriaQuery.from(Alert.class);
+            Query<Alert> query = session.createQuery(criteriaQuery);
+
+            List list = query.getResultList();
             for (Object o : list) {
                 if (o instanceof Alert) {
                     alerts.add((Alert) o);
@@ -312,10 +324,14 @@ public class DBAlertManager extends DBManager<Alert> implements AlertManager {
             tx = session.beginTransaction();
 
             // query hibernate to retrieve alerts with the given baseline id
-            Criteria criteria = session.createCriteria(Alert.class);
-            criteria.add(Restrictions.eq("baselineId", baseline.getId()));
-            criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
-            List list = criteria.list();
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(Alert.class);
+            criteriaQuery.from(Alert.class);
+            Root<Alert> root = criteriaQuery.from(Alert.class);
+            Query<Alert> query = session.createQuery(criteriaQuery);
+
+            List list = query.getResultList();
             for (Object o : list) {
                 if (o instanceof Alert) {
                     alerts.add((Alert) o);
@@ -683,6 +699,13 @@ public class DBAlertManager extends DBManager<Alert> implements AlertManager {
             deviceQuery.setProjection(Property.forName("name"));
 
             // now query within that group for unique device names among unresolved alerts
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            CriteriaQuery<Long> cql = criteriaBuilder.createQuery(Long.class);
+            Root<Alert> root = cql.from(Alert.class);
+            cql.select(criteriaBuilder.count(root));
+            Query<Long> query = session.createQuery(cql);
+            List<Long> itemProjected = query.getResultList();
             Criteria criteria = session.createCriteria(Alert.class);
             criteria.add(Restrictions.isNull("archivedTime"));
             criteria.add(Subqueries.propertyIn("deviceName", deviceQuery));
@@ -695,14 +718,14 @@ public class DBAlertManager extends DBManager<Alert> implements AlertManager {
                 return result.intValue();
             }
 
-        } catch (HibernateException e) {
+        } catch (HibernateException hEx) {
             final String msg = "unable to query alerts table";
-            LOGGER.error(msg, e);
+            LOGGER.error(msg, hEx);
             if (tx != null) {
                 LOGGER.debug("rolling back transaction");
                 tx.rollback();
             }
-            throw e;
+            throw hEx;
         }
     }
 }

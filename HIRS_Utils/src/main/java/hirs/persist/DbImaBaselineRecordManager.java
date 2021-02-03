@@ -1,6 +1,7 @@
 package hirs.persist;
 
 import hirs.data.persist.Digest;
+import hirs.data.persist.alert.AlertServiceConfig;
 import hirs.data.persist.baseline.IMABaselineRecord;
 import hirs.data.persist.OptionalDigest;
 import hirs.data.persist.baseline.QueryableRecordImaBaseline;
@@ -22,6 +23,8 @@ import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.transform.Transformers;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -40,6 +43,8 @@ public class DbImaBaselineRecordManager extends DBManager<IMABaselineRecord>
     private static final Logger LOGGER =
             LogManager.getLogger(DbImaBaselineRecordManager.class);
     private static final int LOGGING_INTERVAL = 500;
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<AlertServiceConfig> criteriaQuery;
 
     /**
      * Creates a new <code>DBImaBaselineRecordManager</code> that uses the default
@@ -282,6 +287,8 @@ public class DbImaBaselineRecordManager extends DBManager<IMABaselineRecord>
                     StatelessSession statelessSession = getStatelessSession();
                     try {
                         Transaction tx = statelessSession.beginTransaction();
+                        // replacement code for session.createCriteria
+                        criteriaBuilder = statelessSession.getCriteriaBuilder();
                         Criteria criteria = statelessSession.createCriteria(baseline.getClass());
                         baseline.configureCriteriaForBaselineRecords(criteria, bucket);
                         criteria.setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);

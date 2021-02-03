@@ -21,6 +21,11 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.query.Query;
+
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 /**
  * This class defines a <code>DeviceManager</code> that stores the devices
@@ -30,6 +35,8 @@ public class DBDeviceManager extends DBManager<Device> implements
         DeviceManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<Device> criteriaQuery;
 
     /**
      * Creates a new <code>DBDeviceManager</code> that uses the default
@@ -251,11 +258,15 @@ public class DBDeviceManager extends DBManager<Device> implements
             LOGGER.debug("retrieving defaults devices from db");
             tx = session.beginTransaction();
 
-            List list = session.createCriteria(Device.class).createAlias("deviceGroup", "group")
-                    .add(Restrictions.eq("group.name", DeviceGroup.DEFAULT_GROUP))
-                    .setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY)
-                    .list();
-            for (Object o : list) {
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(Device.class);
+            criteriaQuery.from(Device.class);
+            Root<Device> root = criteriaQuery.from(Device.class);
+            Query<Device> query = session.createQuery(criteriaQuery);
+            List<Device> policyMapperList = query.getResultList();
+
+            for (Object o : policyMapperList) {
                 if (o instanceof Device) {
                     devices.add((Device) o);
                 }

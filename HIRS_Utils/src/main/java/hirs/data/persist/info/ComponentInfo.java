@@ -100,7 +100,7 @@ public class ComponentInfo implements Serializable {
                 componentModel,
                 componentSerial,
                 componentRevision
-        ), "This is bad.");
+        ), "Manufacturer and Model can not be null.");
         this.componentManufacturer = componentManufacturer.trim();
         this.componentModel = componentModel.trim();
         if (componentSerial != null) {

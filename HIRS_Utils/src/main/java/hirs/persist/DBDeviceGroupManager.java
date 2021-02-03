@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import hirs.data.persist.DeviceState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hibernate.SessionFactory;
@@ -17,6 +18,11 @@ import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.query.Query;
+
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 /**
  * This class defines the <code>DBDeviceGroupManager</code> that is used to
@@ -25,6 +31,8 @@ import org.hibernate.criterion.Restrictions;
 public class DBDeviceGroupManager extends DBManager<DeviceGroup> implements DeviceGroupManager {
 
     private static final Logger LOGGER = LogManager.getLogger(DBDeviceGroupManager.class);
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<PolicyMapper> criteriaQuery;
 
     /**
      * Creates a new <code>DBDeviceGroupManager</code> and sets the
@@ -154,8 +162,14 @@ public class DBDeviceGroupManager extends DBManager<DeviceGroup> implements Devi
             LOGGER.debug("retrieving policy mapper from db where policy = {}", policy);
 
             //Retrieves a list of PolicyMapper objects that are unique per group
-            List policyMapperList = session.createCriteria(PolicyMapper.class)
-                    .add(Restrictions.eq("policy", policy)).list();
+
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(PolicyMapper.class);
+            criteriaQuery.from(PolicyMapper.class);
+            Root<PolicyMapper> root = criteriaQuery.from(PolicyMapper.class);
+            Query<PolicyMapper> query = session.createQuery(criteriaQuery);
+            List<PolicyMapper> policyMapperList = query.getResultList();
 
             session.getTransaction().commit();
 

@@ -2,6 +2,7 @@ package hirs.persist;
 
 import hirs.FilteredRecordsList;
 import hirs.data.bean.SimpleImaRecordBean;
+import hirs.data.persist.Alert;
 import hirs.data.persist.IMAMeasurementRecord;
 import hirs.data.persist.IMAReport;
 import hirs.data.persist.IntegrityReport;
@@ -25,8 +26,12 @@ import org.hibernate.criterion.MatchMode;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.query.Query;
 import org.hibernate.transform.Transformers;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -42,6 +47,8 @@ import static org.hibernate.criterion.Restrictions.ilike;
  */
 public class DBReportManager extends DBManager<Report> implements ReportManager {
     private static final Logger LOGGER = getLogger(DBReportManager.class);
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<IMAMeasurementRecord> criteriaQuery;
 
     /**
      * Creates a new <code>DBReportManager</code> that uses the provided sessionFactory
@@ -361,6 +368,16 @@ public class DBReportManager extends DBManager<Report> implements ReportManager 
                     + "report with id {}", id);
             // The first query gets the total number of IMA
             // measurement records associated with report id.
+
+            // replacement code for session.createCriteria
+            criteriaBuilder = session.getCriteriaBuilder();
+            criteriaQuery = criteriaBuilder.createQuery(IMAMeasurementRecord.class);
+            Root<IMAMeasurementRecord> root = criteriaQuery.from(IMAMeasurementRecord.class);
+
+            criteriaQuery.select(root).where(criteriaBuilder.equal(root.get("report.id"), imaReport.getId()));
+            CriteriaQuery<IMAMeasurementRecord> crs = criteriaQuery.select(root).where(criteriaBuilder.equal(root.get("report.id"), imaReport.getId()));
+
+
             Criteria cr = session.createCriteria(
                     IMAMeasurementRecord.class)
                     .add(Restrictions.eq("report.id", imaReport.getId()))
